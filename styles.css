@@ -274,7 +274,32 @@ main { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1.5rem 4rem; }
 .ficha__disp { font-weight: 600; }
 .ficha__disp.si { color: var(--sage); }
 .ficha__disp.no { color: var(--sello); }
-.estrellas { color: var(--oro); font-family: var(--mono); letter-spacing: 1px; }
+.ficha__signatura {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.cargarMasWrap { text-align: center; margin-top: 2.2rem; }
+.cargarMasBtn {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  background: var(--tinta);
+  color: var(--papel);
+  border: none;
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cargarMasBtn:hover { background: var(--sage); }
+.cargarMasBtn:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+.contadorVisible { margin-top: 0.7rem; font-size: 0.8rem; color: var(--tinta-suave); }
 
 /* ---------- Modal ---------- */
 .modalOverlay {

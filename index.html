@@ -32,8 +32,8 @@
       <span class="hero__eyebrow">Ficha de préstamo · N° visitante</span>
       <span class="hero__num" id="fichaNumero">000000</span>
     </div>
-    <h2 class="hero__title">Un libro esperándote en cada sucursal del Maule</h2>
-    <p class="hero__desc">Explora la selección curada por bibliotecarias y bibliotecarios de Talca, Curicó y Linares. Marca lo que quieres leer, lo que estás leyendo y lo que ya terminaste — como tu propia ficha de lectora.</p>
+    <h2 class="hero__title">Más de 3.300 títulos del catálogo real de la biblioteca</h2>
+    <p class="hero__desc" id="heroDesc">Explora literatura chilena y literatura general disponible en la colección. Marca lo que quieres leer, lo que estás leyendo y lo que ya terminaste — como tu propia ficha de lectora.</p>
     <div class="hero__sello" aria-hidden="true">RECOMENDADO</div>
   </div>
 </section>
@@ -46,7 +46,11 @@
 
   <div id="estadoCarga" class="estado">Consultando el catálogo…</div>
   <div id="grilla" class="grilla" hidden></div>
-  <p id="sinResultados" class="estado" hidden>No encontramos libros con esa búsqueda. Prueba con otro título, autor o género.</p>
+  <p id="sinResultados" class="estado" hidden>No encontramos libros con esa búsqueda. Prueba con otro título, autor o colección.</p>
+  <div class="cargarMasWrap">
+    <button id="cargarMasBtn" class="cargarMasBtn" hidden>Mostrar más títulos</button>
+    <p id="contadorVisible" class="contadorVisible"></p>
+  </div>
 </main>
 
 <div id="modalOverlay" class="modalOverlay" hidden>
@@ -59,13 +63,6 @@
         <h3 id="modalTitulo"></h3>
         <p class="modal__autor" id="modalAutor"></p>
         <p class="modal__meta" id="modalMeta"></p>
-        <p class="modal__sinopsis" id="modalSinopsis"></p>
-
-        <div class="modal__valoracion">
-          <span>Valoración de la comunidad:</span>
-          <span id="modalEstrellas" class="estrellas"></span>
-          <span id="modalNota"></span>
-        </div>
 
         <div class="modal__disponibilidad" id="modalDisponibilidad"></div>
 
@@ -83,9 +80,10 @@
 </div>
 
 <footer class="footer">
-  <p>Lecturas Recomendadas es un catálogo de consulta de la Biblioteca Pública del Maule. Tu ficha de lectura se guarda solo en esta sesión del navegador.</p>
+  <p>Lecturas Recomendadas es un catálogo de consulta basado en el registro bibliográfico de la Biblioteca Pública del Maule. Tu ficha de lectura se guarda solo en esta sesión del navegador.</p>
 </footer>
 
+<script src="datos.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

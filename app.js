@@ -1,12 +1,15 @@
 (function () {
   "use strict";
 
+  const LOTE = 60; // cuántas fichas se muestran por tanda, para no saturar el navegador con miles de tarjetas
+
   const estado = {
     libros: [],
-    generos: [],
-    generoActivo: "Todos",
+    colecciones: [],
+    coleccionActiva: "Todos",
     busqueda: "",
-    fichaLectura: {} // { [id]: "quiero" | "leyendo" | "leido" }  — solo dura esta sesión
+    visibles: LOTE,
+    fichaLectura: {} // { [id]: "quiero" | "leyendo" | "leido" } — solo dura esta sesión del navegador
   };
 
   const el = {
@@ -17,6 +20,9 @@
     filtros: document.getElementById("filtrosGenero"),
     contador: document.getElementById("contadorFicha"),
     fichaNumero: document.getElementById("fichaNumero"),
+    heroDesc: document.getElementById("heroDesc"),
+    cargarMasBtn: document.getElementById("cargarMasBtn"),
+    contadorVisible: document.getElementById("contadorVisible"),
     modalOverlay: document.getElementById("modalOverlay"),
     modalCerrar: document.getElementById("modalCerrar"),
     modalPortada: document.getElementById("modalPortada"),
@@ -24,9 +30,6 @@
     modalTitulo: document.getElementById("modalTitulo"),
     modalAutor: document.getElementById("modalAutor"),
     modalMeta: document.getElementById("modalMeta"),
-    modalSinopsis: document.getElementById("modalSinopsis"),
-    modalEstrellas: document.getElementById("modalEstrellas"),
-    modalNota: document.getElementById("modalNota"),
     modalDisponibilidad: document.getElementById("modalDisponibilidad"),
     modalChips: document.getElementById("modalChips"),
     verPendientesBtn: document.getElementById("verPendientesBtn")
@@ -34,48 +37,44 @@
 
   let libroActivoId = null;
 
-  function estrellas(valor) {
-    const llenas = Math.round(valor);
-    return "★".repeat(llenas) + "☆".repeat(5 - llenas);
-  }
-
-  function iniciales(nombre) {
-    return nombre;
-  }
-
   function cargarCatalogo() {
-    fetch("libros.json")
-      .then((res) => {
-        if (!res.ok) throw new Error("No se pudo leer libros.json");
-        return res.json();
-      })
-      .then((datos) => {
-        estado.libros = datos.libros || [];
-        estado.generos = datos.generos || [];
-        el.fichaNumero.textContent = String(Math.floor(1000 + Math.random() * 8999)).padStart(6, "0");
-        construirFiltros();
-        renderizar();
-        el.carga.hidden = true;
-        el.grilla.hidden = false;
-      })
-      .catch((err) => {
-        el.carga.textContent = "No se pudo cargar el catálogo (" + err.message + "). Revisa que libros.json esté junto a este archivo.";
-      });
+    try {
+      if (typeof LECTURAS_DATA === "undefined") {
+        throw new Error("no se encontró datos.js");
+      }
+      const datos = LECTURAS_DATA;
+      estado.libros = datos.libros || [];
+      estado.colecciones = datos.colecciones || [];
+      el.fichaNumero.textContent = String(Math.floor(1000 + Math.random() * 8999)).padStart(6, "0");
+      if (el.heroDesc && datos.totalTitulos) {
+        el.heroDesc.textContent =
+          "Explora " + datos.totalTitulos.toLocaleString("es-CL") + " títulos (" +
+          datos.totalEjemplares.toLocaleString("es-CL") + " ejemplares) del catálogo de la biblioteca. " +
+          "Marca lo que quieres leer, lo que estás leyendo y lo que ya terminaste — como tu propia ficha de lectora.";
+      }
+      construirFiltros();
+      renderizar();
+      el.carga.hidden = true;
+      el.grilla.hidden = false;
+    } catch (err) {
+      el.carga.textContent = "No se pudo cargar el catálogo (" + err.message + "). Revisa que datos.js esté junto a este archivo y que index.html lo incluya con <script src=\"datos.js\"></script> antes de app.js.";
+    }
   }
 
   function construirFiltros() {
-    const nombres = ["Todos", ...estado.generos];
+    const nombres = ["Todos", ...estado.colecciones];
     el.filtros.innerHTML = "";
-    nombres.forEach((genero) => {
+    nombres.forEach((coleccion) => {
       const btn = document.createElement("button");
       btn.className = "filtro-btn";
       btn.type = "button";
-      btn.textContent = genero;
-      btn.setAttribute("aria-pressed", genero === estado.generoActivo ? "true" : "false");
+      btn.textContent = coleccion;
+      btn.setAttribute("aria-pressed", coleccion === estado.coleccionActiva ? "true" : "false");
       btn.addEventListener("click", () => {
-        estado.generoActivo = genero;
+        estado.coleccionActiva = coleccion;
+        estado.visibles = LOTE;
         [...el.filtros.children].forEach((b) =>
-          b.setAttribute("aria-pressed", b.textContent === genero ? "true" : "false")
+          b.setAttribute("aria-pressed", b.textContent === coleccion ? "true" : "false")
         );
         renderizar();
       });
@@ -86,12 +85,12 @@
   function librosFiltrados() {
     const texto = estado.busqueda.trim().toLowerCase();
     return estado.libros.filter((libro) => {
-      const coincideGenero = estado.generoActivo === "Todos" || libro.genero === estado.generoActivo;
+      const coincideColeccion = estado.coleccionActiva === "Todos" || libro.coleccion === estado.coleccionActiva;
       const coincideTexto =
         !texto ||
         libro.titulo.toLowerCase().includes(texto) ||
         libro.autor.toLowerCase().includes(texto);
-      return coincideGenero && coincideTexto;
+      return coincideColeccion && coincideTexto;
     });
   }
 
@@ -100,10 +99,11 @@
   }
 
   function renderizar() {
-    const lista = librosFiltrados();
+    const listaCompleta = librosFiltrados();
+    const lista = listaCompleta.slice(0, estado.visibles);
     el.grilla.innerHTML = "";
-    el.sinResultados.hidden = lista.length !== 0;
-    el.grilla.hidden = lista.length === 0;
+    el.sinResultados.hidden = listaCompleta.length !== 0;
+    el.grilla.hidden = listaCompleta.length === 0;
 
     lista.forEach((libro) => {
       const card = document.createElement("button");
@@ -118,21 +118,24 @@
 
       card.innerHTML =
         '<div class="ficha__portada" style="background:' + libro.color + '">' +
-          iniciales(libro.iniciales) + etiquetaHtml +
+          libro.iniciales + etiquetaHtml +
         "</div>" +
-        '<p class="ficha__genero">' + libro.genero + " · " + libro.anio + "</p>" +
+        '<p class="ficha__genero">' + libro.coleccion + "</p>" +
         '<h3 class="ficha__titulo">' + libro.titulo + "</h3>" +
         '<p class="ficha__autor">' + libro.autor + "</p>" +
         '<div class="ficha__pie">' +
-          '<span class="estrellas">' + estrellas(libro.valoracion) + "</span>" +
-          '<span class="ficha__disp ' + (libro.disponible ? "si" : "no") + '">' +
-            (libro.disponible ? "Disponible" : "Prestado") +
-          "</span>" +
+          '<span class="ficha__signatura">' + (libro.clasificacion || "Sin signatura") + "</span>" +
+          '<span class="ficha__disp si">' + libro.numEjemplares + (libro.numEjemplares === 1 ? " ejemplar" : " ejemplares") + "</span>" +
         "</div>";
 
       card.addEventListener("click", () => abrirModal(libro.id));
       el.grilla.appendChild(card);
     });
+
+    el.cargarMasBtn.hidden = listaCompleta.length <= estado.visibles;
+    el.contadorVisible.textContent = listaCompleta.length
+      ? "Mostrando " + lista.length + " de " + listaCompleta.length + " títulos"
+      : "";
   }
 
   function abrirModal(id) {
@@ -140,18 +143,15 @@
     if (!libro) return;
     libroActivoId = id;
 
-    el.modalPortada.style.background = libro.color;
-    el.modalPortada.textContent = libro.iniciales;
-    el.modalGenero.textContent = libro.genero;
+    document.getElementById("modalPortada").style.background = libro.color;
+    document.getElementById("modalPortada").textContent = libro.iniciales;
+    el.modalGenero.textContent = libro.coleccion;
     el.modalTitulo.textContent = libro.titulo;
     el.modalAutor.textContent = "por " + libro.autor;
-    el.modalMeta.textContent = libro.anio + " · " + libro.paginas + " páginas";
-    el.modalSinopsis.textContent = libro.sinopsis;
-    el.modalEstrellas.textContent = estrellas(libro.valoracion);
-    el.modalNota.textContent = libro.valoracion.toFixed(1) + " / 5";
-    el.modalDisponibilidad.textContent = libro.disponible
-      ? "Disponible ahora en " + libro.sucursal
-      : "Actualmente prestado — consulta reserva en " + libro.sucursal;
+    el.modalMeta.textContent = "Signatura: " + (libro.clasificacion || "sin registrar");
+    el.modalDisponibilidad.textContent =
+      libro.numEjemplares + (libro.numEjemplares === 1 ? " ejemplar registrado" : " ejemplares registrados") +
+      " en la colección " + libro.coleccion + ".";
 
     const actual = estado.fichaLectura[id];
     [...el.modalChips.children].forEach((chip) => {
@@ -199,8 +199,19 @@
     renderizar();
   });
 
+  let temporizadorBusqueda = null;
   el.buscador.addEventListener("input", (e) => {
-    estado.busqueda = e.target.value;
+    const valor = e.target.value;
+    clearTimeout(temporizadorBusqueda);
+    temporizadorBusqueda = setTimeout(() => {
+      estado.busqueda = valor;
+      estado.visibles = LOTE;
+      renderizar();
+    }, 150);
+  });
+
+  el.cargarMasBtn.addEventListener("click", () => {
+    estado.visibles += LOTE;
     renderizar();
   });
 
