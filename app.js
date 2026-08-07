@@ -9,7 +9,9 @@
     coleccionActiva: "Todos",
     busqueda: "",
     visibles: LOTE,
-    fichaLectura: {} // { [id]: "quiero" | "leyendo" | "leido" } — solo dura esta sesión del navegador
+    fichaLectura: {},  // { [id]: "quiero" | "leyendo" | "leido" } — solo dura esta sesión
+    valoraciones: {},  // { [id]: 1-5 } — calificación personal, solo esta sesión
+    resenas: {}        // { [id]: "texto" } — reseña personal, solo esta sesión
   };
 
   const el = {
@@ -23,6 +25,10 @@
     heroDesc: document.getElementById("heroDesc"),
     cargarMasBtn: document.getElementById("cargarMasBtn"),
     contadorVisible: document.getElementById("contadorVisible"),
+    catalogoContenido: document.getElementById("catalogoContenido"),
+    miFichaView: document.getElementById("miFichaView"),
+    miFichaGrupos: document.getElementById("miFichaGrupos"),
+    volverCatalogoBtn: document.getElementById("volverCatalogoBtn"),
     modalOverlay: document.getElementById("modalOverlay"),
     modalCerrar: document.getElementById("modalCerrar"),
     modalPortada: document.getElementById("modalPortada"),
@@ -32,6 +38,8 @@
     modalMeta: document.getElementById("modalMeta"),
     modalDisponibilidad: document.getElementById("modalDisponibilidad"),
     modalChips: document.getElementById("modalChips"),
+    modalEstrellasInput: document.getElementById("modalEstrellasInput"),
+    modalResenaTexto: document.getElementById("modalResenaTexto"),
     verPendientesBtn: document.getElementById("verPendientesBtn")
   };
 
@@ -98,6 +106,11 @@
     return { quiero: "Por leer", leyendo: "Leyendo", leido: "Leído" }[codigo] || "";
   }
 
+  function estrellasTexto(valor) {
+    const llenas = Math.round(valor);
+    return "★".repeat(llenas) + "☆".repeat(5 - llenas);
+  }
+
   function renderizar() {
     const listaCompleta = librosFiltrados();
     const lista = listaCompleta.slice(0, estado.visibles);
@@ -125,7 +138,6 @@
         '<p class="ficha__autor">' + libro.autor + "</p>" +
         '<div class="ficha__pie">' +
           '<span class="ficha__signatura">' + (libro.clasificacion || "Sin signatura") + "</span>" +
-          '<span class="ficha__disp si">' + libro.numEjemplares + (libro.numEjemplares === 1 ? " ejemplar" : " ejemplares") + "</span>" +
         "</div>";
 
       card.addEventListener("click", () => abrirModal(libro.id));
@@ -138,13 +150,20 @@
       : "";
   }
 
+  function pintarEstrellasInput(valorActivo) {
+    [...el.modalEstrellasInput.children].forEach((btn) => {
+      const v = Number(btn.dataset.valor);
+      btn.classList.toggle("activa", v <= (valorActivo || 0));
+    });
+  }
+
   function abrirModal(id) {
     const libro = estado.libros.find((l) => l.id === id);
     if (!libro) return;
     libroActivoId = id;
 
-    document.getElementById("modalPortada").style.background = libro.color;
-    document.getElementById("modalPortada").textContent = libro.iniciales;
+    el.modalPortada.style.background = libro.color;
+    el.modalPortada.textContent = libro.iniciales;
     el.modalGenero.textContent = libro.coleccion;
     el.modalTitulo.textContent = libro.titulo;
     el.modalAutor.textContent = "por " + libro.autor;
@@ -157,6 +176,9 @@
     [...el.modalChips.children].forEach((chip) => {
       chip.setAttribute("aria-pressed", chip.dataset.estado === actual ? "true" : "false");
     });
+
+    pintarEstrellasInput(estado.valoraciones[id]);
+    el.modalResenaTexto.value = estado.resenas[id] || "";
 
     el.modalOverlay.hidden = false;
     document.body.style.overflow = "hidden";
@@ -199,6 +221,35 @@
     renderizar();
   });
 
+  el.modalEstrellasInput.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn || !libroActivoId) return;
+    const valor = Number(btn.dataset.valor);
+    const yaEraEseValor = estado.valoraciones[libroActivoId] === valor;
+    if (yaEraEseValor) {
+      delete estado.valoraciones[libroActivoId];
+      pintarEstrellasInput(0);
+    } else {
+      estado.valoraciones[libroActivoId] = valor;
+      pintarEstrellasInput(valor);
+    }
+  });
+
+  let temporizadorResena = null;
+  el.modalResenaTexto.addEventListener("input", (e) => {
+    const valor = e.target.value;
+    const idAlEscribir = libroActivoId;
+    clearTimeout(temporizadorResena);
+    temporizadorResena = setTimeout(() => {
+      if (!idAlEscribir) return;
+      if (valor.trim()) {
+        estado.resenas[idAlEscribir] = valor;
+      } else {
+        delete estado.resenas[idAlEscribir];
+      }
+    }, 250);
+  });
+
   let temporizadorBusqueda = null;
   el.buscador.addEventListener("input", (e) => {
     const valor = e.target.value;
@@ -215,11 +266,89 @@
     renderizar();
   });
 
+  // ---------- Vista "Mi ficha" ----------
+
+  function mostrarFicha() {
+    el.catalogoContenido.hidden = true;
+    el.miFichaView.hidden = false;
+    renderizarFicha();
+    el.miFichaView.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function mostrarCatalogo() {
+    el.miFichaView.hidden = true;
+    el.catalogoContenido.hidden = false;
+    document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function renderizarFicha() {
+    const grupos = [
+      { codigo: "leyendo", titulo: "Leyendo ahora" },
+      { codigo: "quiero", titulo: "Quiero leerlo" },
+      { codigo: "leido", titulo: "Leído" }
+    ];
+
+    el.miFichaGrupos.innerHTML = "";
+
+    const idsMarcados = Object.keys(estado.fichaLectura);
+    if (idsMarcados.length === 0) {
+      const vacio = document.createElement("p");
+      vacio.className = "estado";
+      vacio.textContent = "Todavía no has marcado ningún libro. Abre una ficha del catálogo y elige un estado de lectura.";
+      el.miFichaGrupos.appendChild(vacio);
+      return;
+    }
+
+    grupos.forEach((grupo) => {
+      const idsDelGrupo = idsMarcados
+        .filter((id) => estado.fichaLectura[id] === grupo.codigo)
+        .map(Number);
+      if (idsDelGrupo.length === 0) return;
+
+      const bloque = document.createElement("div");
+      bloque.className = "miFicha__grupo";
+
+      const encabezado = document.createElement("h3");
+      encabezado.textContent = grupo.titulo + " (" + idsDelGrupo.length + ")";
+      bloque.appendChild(encabezado);
+
+      const listaEl = document.createElement("div");
+      listaEl.className = "miFicha__lista";
+
+      idsDelGrupo.forEach((id) => {
+        const libro = estado.libros.find((l) => l.id === id);
+        if (!libro) return;
+
+        const valoracion = estado.valoraciones[id];
+        const resena = estado.resenas[id];
+
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "miFicha__item";
+        item.setAttribute("aria-label", "Ver ficha de " + libro.titulo);
+        item.innerHTML =
+          '<span class="miFicha__itemPortada" style="background:' + libro.color + '">' + libro.iniciales + "</span>" +
+          '<span class="miFicha__itemInfo">' +
+            '<span class="miFicha__itemTitulo">' + libro.titulo + "</span>" +
+            '<span class="miFicha__itemAutor">' + libro.autor + "</span>" +
+            (valoracion ? '<span class="estrellas">' + estrellasTexto(valoracion) + "</span>" : "") +
+            (resena ? '<span class="miFicha__itemResena">“' + resena.slice(0, 90) + (resena.length > 90 ? "…" : "") + '”</span>' : "") +
+          "</span>";
+        item.addEventListener("click", () => abrirModal(id));
+        listaEl.appendChild(item);
+      });
+
+      bloque.appendChild(listaEl);
+      el.miFichaGrupos.appendChild(bloque);
+    });
+  }
+
   el.verPendientesBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
-    el.buscador.focus();
+    mostrarFicha();
   });
+
+  el.volverCatalogoBtn.addEventListener("click", mostrarCatalogo);
 
   cargarCatalogo();
 })();

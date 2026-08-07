@@ -39,18 +39,31 @@
 </section>
 
 <main id="catalogo">
-  <div class="toolbar">
-    <input type="search" id="buscador" placeholder="Buscar por título o autor…" aria-label="Buscar libros">
-    <div class="filtros" id="filtrosGenero" role="group" aria-label="Filtrar por género"></div>
+  <div id="catalogoContenido">
+    <div class="toolbar">
+      <input type="search" id="buscador" placeholder="Buscar por título o autor…" aria-label="Buscar libros">
+      <div class="filtros" id="filtrosGenero" role="group" aria-label="Filtrar por género"></div>
+    </div>
+
+    <div id="estadoCarga" class="estado">Consultando el catálogo…</div>
+    <div id="grilla" class="grilla" hidden></div>
+    <p id="sinResultados" class="estado" hidden>No encontramos libros con esa búsqueda. Prueba con otro título, autor o colección.</p>
+    <div class="cargarMasWrap">
+      <button id="cargarMasBtn" class="cargarMasBtn" hidden>Mostrar más títulos</button>
+      <p id="contadorVisible" class="contadorVisible"></p>
+    </div>
   </div>
 
-  <div id="estadoCarga" class="estado">Consultando el catálogo…</div>
-  <div id="grilla" class="grilla" hidden></div>
-  <p id="sinResultados" class="estado" hidden>No encontramos libros con esa búsqueda. Prueba con otro título, autor o colección.</p>
-  <div class="cargarMasWrap">
-    <button id="cargarMasBtn" class="cargarMasBtn" hidden>Mostrar más títulos</button>
-    <p id="contadorVisible" class="contadorVisible"></p>
-  </div>
+  <section id="miFichaView" class="miFichaView" hidden>
+    <div class="miFicha__header">
+      <div>
+        <h2>Mi ficha de lectura</h2>
+        <p class="miFicha__aviso">Esta lista vive solo en esta sesión del navegador — se borra si recargas o cierras la pestaña.</p>
+      </div>
+      <button id="volverCatalogoBtn" class="cargarMasBtn">Volver al catálogo</button>
+    </div>
+    <div id="miFichaGrupos" class="miFicha__grupos"></div>
+  </section>
 </main>
 
 <div id="modalOverlay" class="modalOverlay" hidden>
@@ -73,6 +86,22 @@
             <button class="chip" data-estado="leyendo">Leyendo</button>
             <button class="chip" data-estado="leido">Leído</button>
           </div>
+        </div>
+
+        <div class="modal__valoracionPersonal">
+          <span>Tu calificación:</span>
+          <div class="estrellasInput" id="modalEstrellasInput" role="group" aria-label="Calificar este libro">
+            <button type="button" data-valor="1" aria-label="1 estrella">★</button>
+            <button type="button" data-valor="2" aria-label="2 estrellas">★</button>
+            <button type="button" data-valor="3" aria-label="3 estrellas">★</button>
+            <button type="button" data-valor="4" aria-label="4 estrellas">★</button>
+            <button type="button" data-valor="5" aria-label="5 estrellas">★</button>
+          </div>
+        </div>
+
+        <div class="modal__resena">
+          <label for="modalResenaTexto">Tu reseña (opcional):</label>
+          <textarea id="modalResenaTexto" rows="3" placeholder="¿Qué te pareció este libro?"></textarea>
         </div>
       </div>
     </div>
