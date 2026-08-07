@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecturas Recomendadas · Biblioteca Pública del Maule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Courier+Prime:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <div class="brand">
+      <span class="brand__stamp">BPM</span>
+      <div class="brand__text">
+        <h1>Lecturas Recomendadas</h1>
+        <p>Biblioteca Pública del Maule</p>
+      </div>
+    </div>
+    <nav class="brand__nav">
+      <a href="#catalogo">Catálogo</a>
+      <a href="#" id="verPendientesBtn">Mi ficha <span id="contadorFicha">0</span></a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero__card" id="heroCard">
+    <div class="hero__cardTop">
+      <span class="hero__eyebrow">Ficha de préstamo · N° visitante</span>
+      <span class="hero__num" id="fichaNumero">000000</span>
+    </div>
+    <h2 class="hero__title">Un libro esperándote en cada sucursal del Maule</h2>
+    <p class="hero__desc">Explora la selección curada por bibliotecarias y bibliotecarios de Talca, Curicó y Linares. Marca lo que quieres leer, lo que estás leyendo y lo que ya terminaste — como tu propia ficha de lectora.</p>
+    <div class="hero__sello" aria-hidden="true">RECOMENDADO</div>
+  </div>
+</section>
+
+<main id="catalogo">
+  <div class="toolbar">
+    <input type="search" id="buscador" placeholder="Buscar por título o autor…" aria-label="Buscar libros">
+    <div class="filtros" id="filtrosGenero" role="group" aria-label="Filtrar por género"></div>
+  </div>
+
+  <div id="estadoCarga" class="estado">Consultando el catálogo…</div>
+  <div id="grilla" class="grilla" hidden></div>
+  <p id="sinResultados" class="estado" hidden>No encontramos libros con esa búsqueda. Prueba con otro título, autor o género.</p>
+</main>
+
+<div id="modalOverlay" class="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+    <button class="modal__cerrar" id="modalCerrar" aria-label="Cerrar ficha">✕</button>
+    <div class="modal__grid">
+      <div class="modal__cover" id="modalPortada"></div>
+      <div class="modal__info">
+        <p class="modal__genero" id="modalGenero"></p>
+        <h3 id="modalTitulo"></h3>
+        <p class="modal__autor" id="modalAutor"></p>
+        <p class="modal__meta" id="modalMeta"></p>
+        <p class="modal__sinopsis" id="modalSinopsis"></p>
+
+        <div class="modal__valoracion">
+          <span>Valoración de la comunidad:</span>
+          <span id="modalEstrellas" class="estrellas"></span>
+          <span id="modalNota"></span>
+        </div>
+
+        <div class="modal__disponibilidad" id="modalDisponibilidad"></div>
+
+        <div class="modal__estado">
+          <span>Tu estado de lectura:</span>
+          <div class="chips" id="modalChips">
+            <button class="chip" data-estado="quiero">Quiero leerlo</button>
+            <button class="chip" data-estado="leyendo">Leyendo</button>
+            <button class="chip" data-estado="leido">Leído</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>Lecturas Recomendadas es un catálogo de consulta de la Biblioteca Pública del Maule. Tu ficha de lectura se guarda solo en esta sesión del navegador.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
