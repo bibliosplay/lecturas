@@ -34,6 +34,15 @@
     </div>
     <h2 class="hero__title">Más de 3.300 títulos del catálogo real de la biblioteca</h2>
     <p class="hero__desc" id="heroDesc">Explora literatura chilena y literatura general disponible en la colección. Marca lo que quieres leer, lo que estás leyendo y lo que ya terminaste — como tu propia ficha de lectora.</p>
+
+    <div class="hero__codigo">
+      <p class="hero__codigoAyuda">Tu ficha se guarda con el número de arriba. Anótalo para recuperarla otro día, o ingresa uno que ya tengas:</p>
+      <div class="hero__codigoForm">
+        <input type="text" id="codigoInput" placeholder="Ej: 008963" inputmode="numeric" maxlength="6" aria-label="Código de ficha">
+        <button id="cargarCodigoBtn" type="button">Cargar mi ficha</button>
+      </div>
+      <p id="codigoEstado" class="hero__codigoEstado" role="status"></p>
+    </div>
     <div class="hero__sello" aria-hidden="true">RECOMENDADO</div>
   </div>
 </section>
@@ -112,6 +121,7 @@
   <p>Lecturas Recomendadas es un catálogo de consulta basado en el registro bibliográfico de la Biblioteca Pública del Maule. Tu ficha de lectura se guarda solo en esta sesión del navegador.</p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="datos.js"></script>
 <script src="app.js"></script>
 </body>

@@ -133,6 +133,40 @@ a { color: inherit; }
   max-width: 34ch;
 }
 .hero__desc { max-width: 56ch; color: var(--tinta-suave); margin: 0; }
+.hero__codigo {
+  margin-top: 1.3rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--borde);
+  max-width: 44ch;
+}
+.hero__codigoAyuda { margin: 0 0 0.6rem; font-size: 0.82rem; color: var(--tinta-suave); }
+.hero__codigoForm { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.hero__codigoForm input {
+  font: inherit;
+  font-family: var(--mono);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: #fff;
+  color: var(--tinta);
+  width: 9rem;
+}
+.hero__codigoForm input:focus-visible { outline: 2px solid var(--sage); outline-offset: 1px; }
+.hero__codigoForm button {
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--tinta);
+  background: var(--tinta);
+  color: var(--papel);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+.hero__codigoForm button:hover { background: var(--sage); border-color: var(--sage); }
+.hero__codigoForm button:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+.hero__codigoEstado { margin: 0.6rem 0 0; font-size: 0.8rem; min-height: 1.1em; }
+.hero__codigoEstado.ok { color: var(--sage); }
+.hero__codigoEstado.error { color: var(--sello); }
 .hero__sello {
   position: absolute;
   right: 2rem;

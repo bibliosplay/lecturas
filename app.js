@@ -3,15 +3,24 @@
 
   const LOTE = 60; // cuántas fichas se muestran por tanda, para no saturar el navegador con miles de tarjetas
 
+  const SUPABASE_URL = "https://zbxkdhvfqjbhqqzaebep.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_I9hUDqgemEBRkfl-hjzqYg_6UuZJ4ED";
+  const TABLA = "fichas_lectura";
+
+  const sb = (window.supabase && window.supabase.createClient)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
   const estado = {
     libros: [],
     colecciones: [],
     coleccionActiva: "Todos",
     busqueda: "",
     visibles: LOTE,
-    fichaLectura: {},  // { [id]: "quiero" | "leyendo" | "leido" } — solo dura esta sesión
-    valoraciones: {},  // { [id]: 1-5 } — calificación personal, solo esta sesión
-    resenas: {}        // { [id]: "texto" } — reseña personal, solo esta sesión
+    codigoFicha: null,
+    fichaLectura: {},  // { [id]: "quiero" | "leyendo" | "leido" }
+    valoraciones: {},  // { [id]: 1-5 }
+    resenas: {}        // { [id]: "texto" }
   };
 
   const el = {
@@ -23,6 +32,9 @@
     contador: document.getElementById("contadorFicha"),
     fichaNumero: document.getElementById("fichaNumero"),
     heroDesc: document.getElementById("heroDesc"),
+    codigoInput: document.getElementById("codigoInput"),
+    cargarCodigoBtn: document.getElementById("cargarCodigoBtn"),
+    codigoEstado: document.getElementById("codigoEstado"),
     cargarMasBtn: document.getElementById("cargarMasBtn"),
     contadorVisible: document.getElementById("contadorVisible"),
     catalogoContenido: document.getElementById("catalogoContenido"),
@@ -45,6 +57,10 @@
 
   let libroActivoId = null;
 
+  function generarCodigo() {
+    return String(Math.floor(1000 + Math.random() * 8999)).padStart(6, "0");
+  }
+
   function cargarCatalogo() {
     try {
       if (typeof LECTURAS_DATA === "undefined") {
@@ -53,7 +69,6 @@
       const datos = LECTURAS_DATA;
       estado.libros = datos.libros || [];
       estado.colecciones = datos.colecciones || [];
-      el.fichaNumero.textContent = String(Math.floor(1000 + Math.random() * 8999)).padStart(6, "0");
       if (el.heroDesc && datos.totalTitulos) {
         el.heroDesc.textContent =
           "Explora " + datos.totalTitulos.toLocaleString("es-CL") + " títulos (" +
@@ -64,6 +79,9 @@
       renderizar();
       el.carga.hidden = true;
       el.grilla.hidden = false;
+
+      estado.codigoFicha = generarCodigo();
+      el.fichaNumero.textContent = estado.codigoFicha;
     } catch (err) {
       el.carga.textContent = "No se pudo cargar el catálogo (" + err.message + "). Revisa que datos.js esté junto a este archivo y que index.html lo incluya con <script src=\"datos.js\"></script> antes de app.js.";
     }
@@ -195,6 +213,79 @@
     el.contador.textContent = String(Object.keys(estado.fichaLectura).length);
   }
 
+  // ---------- Guardado en Supabase ----------
+
+  async function guardarInteraccion(id) {
+    if (!sb || !estado.codigoFicha) return;
+    const fila = {
+      codigo_ficha: estado.codigoFicha,
+      libro_id: id,
+      estado: estado.fichaLectura[id] || null,
+      valoracion: estado.valoraciones[id] || null,
+      resena: estado.resenas[id] || null
+    };
+    const vacia = !fila.estado && !fila.valoracion && !fila.resena;
+    try {
+      if (vacia) {
+        await sb.from(TABLA).delete().eq("codigo_ficha", estado.codigoFicha).eq("libro_id", id);
+      } else {
+        await sb.from(TABLA).upsert(fila, { onConflict: "codigo_ficha,libro_id" });
+      }
+    } catch (err) {
+      console.error("No se pudo guardar en Supabase:", err);
+    }
+  }
+
+  async function cargarFichaDesdeSupabase(codigo) {
+    if (!sb) {
+      el.codigoEstado.textContent = "No se pudo conectar con la base de datos.";
+      el.codigoEstado.className = "hero__codigoEstado error";
+      return;
+    }
+    el.codigoEstado.textContent = "Buscando tu ficha…";
+    el.codigoEstado.className = "hero__codigoEstado";
+    try {
+      const { data, error } = await sb.from(TABLA).select("*").eq("codigo_ficha", codigo);
+      if (error) throw error;
+
+      estado.fichaLectura = {};
+      estado.valoraciones = {};
+      estado.resenas = {};
+      (data || []).forEach((fila) => {
+        if (fila.estado) estado.fichaLectura[fila.libro_id] = fila.estado;
+        if (fila.valoracion) estado.valoraciones[fila.libro_id] = fila.valoracion;
+        if (fila.resena) estado.resenas[fila.libro_id] = fila.resena;
+      });
+
+      estado.codigoFicha = codigo;
+      el.fichaNumero.textContent = codigo;
+      actualizarContador();
+      renderizar();
+
+      el.codigoEstado.textContent = (data && data.length)
+        ? "Ficha cargada: " + data.length + " libro(s) marcados."
+        : "Ese código no tiene libros marcados todavía (puedes empezar a usarlo).";
+      el.codigoEstado.className = "hero__codigoEstado ok";
+    } catch (err) {
+      el.codigoEstado.textContent = "No se pudo cargar esa ficha. Intenta de nuevo.";
+      el.codigoEstado.className = "hero__codigoEstado error";
+      console.error(err);
+    }
+  }
+
+  el.cargarCodigoBtn.addEventListener("click", () => {
+    const codigo = el.codigoInput.value.trim();
+    if (!codigo) {
+      el.codigoEstado.textContent = "Escribe un código primero.";
+      el.codigoEstado.className = "hero__codigoEstado error";
+      return;
+    }
+    cargarFichaDesdeSupabase(codigo);
+  });
+  el.codigoInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") el.cargarCodigoBtn.click();
+  });
+
   el.modalCerrar.addEventListener("click", cerrarModal);
   el.modalOverlay.addEventListener("click", (e) => {
     if (e.target === el.modalOverlay) cerrarModal();
@@ -219,6 +310,7 @@
     );
     actualizarContador();
     renderizar();
+    guardarInteraccion(libroActivoId);
   });
 
   el.modalEstrellasInput.addEventListener("click", (e) => {
@@ -233,6 +325,7 @@
       estado.valoraciones[libroActivoId] = valor;
       pintarEstrellasInput(valor);
     }
+    guardarInteraccion(libroActivoId);
   });
 
   let temporizadorResena = null;
@@ -247,7 +340,8 @@
       } else {
         delete estado.resenas[idAlEscribir];
       }
-    }, 250);
+      guardarInteraccion(idAlEscribir);
+    }, 600);
   });
 
   let temporizadorBusqueda = null;
