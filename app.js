@@ -96,6 +96,7 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
 }
 
 // 4. Consulta silenciosa a tu servidor proxy local (Puerto 3000)
+// 4. Consulta silenciosa a tu servidor proxy local (Puerto 3000)
 function preguntarDisponibilidadAleph(idSistema) {
     // Rellenamos con ceros a la izquierda para cumplir los 9 dígitos que exige Aleph
     const idFormateado = String(idSistema).padStart(9, '0');
@@ -110,12 +111,13 @@ function preguntarDisponibilidadAleph(idSistema) {
             const contenedorBadge = tarjeta.querySelector('.availability-container');
             if (!contenedorBadge) return;
 
-            // El proxy local calcula las clases de color de forma automática para BP. Talca
-            if (json.success && json.data.disponible) {
-                contenedorBadge.innerHTML = `<span class="status-badge status-available" style="color: #137333; font-weight: bold; background: #e6f4ea; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-block;">🟢 Disponible en estantería</span>`;
-            } else {
-                const fDevolucion = json.data?.fecha_devolucion;
-                contenedorBadge.innerHTML = `<span class="status-badge status-borrowed" style="color: #c5221f; font-weight: bold; background: #fce8e6; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-block;">🔴 Prestado ${fDevolucion ? `(Devuelve: ${fDevolucion})` : ''}</span>`;
+            // LEEMOS LOS DATOS PROCESADOS POR TU SERVIDOR LOCAL (BP. TALCA)
+            if (json.success && json.data) {
+                contenedorBadge.innerHTML = `
+                    <span class="status-badge ${json.data.clase_css || 'status-normal'}">
+                        ${json.data.texto || 'ℹ️ Disponible en Sala'}
+                    </span>
+                `;
             }
         })
         .catch(() => {
@@ -123,7 +125,7 @@ function preguntarDisponibilidadAleph(idSistema) {
             if (!tarjeta) return;
             const contenedorBadge = tarjeta.querySelector('.availability-container');
             if (contenedorBadge) {
-                contenedorBadge.innerHTML = `<span class="status-badge status-normal" style="color: #555; background: #f5f5f5; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-block;">ℹ️ Disponible en sala</span>`;
+                contenedorBadge.innerHTML = `<span class="status-badge status-normal">ℹ️ Consulta Disponibilidad en Sala</span>`;
             }
         });
 }
