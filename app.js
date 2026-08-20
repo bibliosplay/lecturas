@@ -129,3 +129,18 @@ function preguntarDisponibilidadAleph(idSistema) {
             }
         });
 }
+// 5. ACTUALIZACIÓN VISUAL: Inyecta el estado de color precalculado por el proxy local
+function actualizarEtiquetaVisual(idSistema, datosLibro) {
+    const tarjeta = document.getElementById(`libro-${idSistema}`);
+    if (!tarjeta) return;
+
+    const contenedorDisponibilidad = tarjeta.querySelector('.availability-container');
+    if (!contenedorDisponibilidad) return;
+
+    // El proxy ahora calcula de fondo la clase de color y el texto exacto según la sede
+    contenedorDisponibilidad.innerHTML = `
+        <span class="status-badge ${datosLibro.clase_css || 'status-normal'}">
+            ${datosLibro.texto || 'ℹ️ Disponible en Sala'}
+        </span>
+    `;
+}
