@@ -72,7 +72,7 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
         // Formateamos el ID a 9 dígitos para armar la URL del catálogo unificado
         const idFormateado = String(libro.id).padStart(9, '0');
         
-        // URL universal nativa del OPAC que abre la disponibilidad de tu libro directo en Santiago
+        // URL unificada que abre la ficha técnica del libro en el OPAC de forma nativa
         const urlOpacDirecta = `http://bncatalogo.cl{idFormateado}`;
 
         // Estilo adaptado para mantener la elegancia de tu grilla crema
