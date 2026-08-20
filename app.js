@@ -1,11 +1,10 @@
 /**
  * ==========================================================================
- * SISTEMA DEFINITIVO: CONECTOR RECOMENDADOS + PROXY ALEPH v.24 (BP. TALCA)
- * Biblioteca Pública del Maule - Clase 800
+ * SISTEMA DEFINITIVO: CATÁLOGO WEB DE RECOMENDACIONES LITERARIAS
+ * Biblioteca Pública del Maule - Clase 800 (Canal OPAC Directo)
  * ==========================================================================
  */
 
-const PUENTE_ALEPH_URL = 'http://localhost:3000/api/libros';
 let catalogoCompleto = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -68,64 +67,30 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
     listaDeLibros.forEach(libro => {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'book-card';
-        
-        // Vinculamos el ID de la tarjeta al número único del libro (id)
         tarjeta.id = `libro-${libro.id}`;
         
+        // Formateamos el ID a 9 dígitos para armar la URL del catálogo unificado
+        const idFormateado = String(libro.id).padStart(9, '0');
+        
+        // URL universal nativa del OPAC que abre la disponibilidad de tu libro directo en Santiago
+        const urlOpacDirecta = `http://bncatalogo.cl{idFormateado}`;
+
         // Estilo adaptado para mantener la elegancia de tu grilla crema
         tarjeta.style.cssText = "border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; background: #fff; display: inline-block; width: 260px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-family: sans-serif;";
 
         tarjeta.innerHTML = `
-            <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #222;">${libro.titulo || 'Sin título'}</h3>
-            <p style="margin: 0 0 5px 0; color: #555; font-size: 0.95rem;">Por: ${libro.autor || 'Autor desconocido'}</p>
-            <p style="margin: 0; font-size: 0.85rem; color: #888;">Clasificación: ${libro.clasificacion || '800'}</p>
+            <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #222; min-height: 44px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${libro.titulo || 'Sin título'}</h3>
+            <p style="margin: 0 0 10px 0; color: #555; font-size: 0.95rem;">Por: ${libro.autor || 'Autor desconocido'}</p>
+            <p style="margin: 0 0 15px 0; font-size: 0.85rem; color: #888;">Clasificación: ${libro.clasificacion || '800'}</p>
             
-            <!-- Óvalo dinámico de disponibilidad -->
-            <div class="availability-container" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #eee;">
-                <span class="status-badge" style="color: #777; font-size: 0.85rem;">🔄 Verificando...</span>
+            <!-- BOTÓN INTELIGENTE: Abre la disponibilidad real del libro en tu mesón en una pestaña nueva -->
+            <div class="availability-container" style="margin-top: auto; padding-top: 10px; border-top: 1px dashed #eee; text-align: center;">
+                <a href="${urlOpacDirecta}" target="_blank" class="status-badge" style="color: #0056b3; font-weight: bold; background: #e7f1ff; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; display: inline-block; text-decoration: none; border: 1px solid #b6d4fe; transition: background 0.2s;">
+                    🔍 Consultar Disponibilidad Maule
+                </a>
             </div>
         `;
         
         grilla.appendChild(tarjeta);
-
-        // Si tu libro tiene ID, consultamos inmediatamente al proxy de tu máquina
-        if (libro.id) {
-            preguntarDisponibilidadAleph(libro.id);
-        }
     });
-}
-
-// 4. Consulta silenciosa a tu servidor proxy local (Puerto 3000)
-// 4. Consulta silenciosa a tu servidor proxy local (Puerto 3000)
-function preguntarDisponibilidadAleph(idSistema) {
-    // Rellenamos con ceros a la izquierda para cumplir los 9 dígitos que exige Aleph
-    const idFormateado = String(idSistema).padStart(9, '0');
-
-    fetch(`${PUENTE_ALEPH_URL}/${idFormateado}`)
-        .then(res => res.json())
-        .then(json => {
-            // Buscamos la tarjeta usando la propiedad idSistema unificada
-            const tarjeta = document.getElementById(`libro-${idSistema}`);
-            if (!tarjeta) return;
-
-            const contenedorBadge = tarjeta.querySelector('.availability-container');
-            if (!contenedorBadge) return;
-
-            // LEEMOS LOS DATOS PROCESADOS POR TU SERVIDOR LOCAL (BP. TALCA)
-            if (json.success && json.data) {
-                contenedorBadge.innerHTML = `
-                    <span class="status-badge ${json.data.clase_css || 'status-normal'}">
-                        ${json.data.texto || 'ℹ️ Disponible en Sala'}
-                    </span>
-                `;
-            }
-        })
-        .catch(() => {
-            const tarjeta = document.getElementById(`libro-${idSistema}`);
-            if (!tarjeta) return;
-            const contenedorBadge = tarjeta.querySelector('.availability-container');
-            if (contenedorBadge) {
-                contenedorBadge.innerHTML = `<span class="status-badge status-normal">ℹ️ Consulta Disponibilidad en Sala</span>`;
-            }
-        });
 }
