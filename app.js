@@ -1,6 +1,6 @@
 /**
  * ==========================================================================
- * SISTEMA DEFINITIVO: LECTURA DE ESTRUCTURA JSON RECOMENDADOS + PROXY ALEPH
+ * SISTEMA DEFINITIVO: CONECTOR RECOMENDADOS + PROXY ALEPH v.24 (BP. TALCA)
  * Biblioteca Pública del Maule - Clase 800
  * ==========================================================================
  */
@@ -9,31 +9,28 @@ const PUENTE_ALEPH_URL = 'http://localhost:3000/api/libros';
 let catalogoCompleto = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cargamos tu archivo libros.json
+    // 1. Cargamos tu archivo libros.json institucional
     fetch('libros.json')
         .then(response => {
             if (!response.ok) throw new Error('No se pudo cargar libros.json');
             return response.json();
         })
         .then(data => {
-            // Mapeo exacto: Extraemos el arreglo de la propiedad "libros" del JSON
+            // Extraemos el arreglo de la propiedad "libros" de tu JSON
             if (data && Array.isArray(data.libros)) {
                 catalogoCompleto = data.libros;
-                console.log("Libros cargados con éxito:", catalogoCompleto.length);
                 
                 // Desplegamos los primeros 40 libros en pantalla al entrar
                 mostrarLibrosEnPantalla(catalogoCompleto.slice(0, 40));
 
                 // Activamos tu barra de búsqueda sobre este catálogo
                 inicializarBuscadorMaule(catalogoCompleto);
-            } else {
-                console.error("La estructura del JSON no contiene la propiedad 'libros' como arreglo.");
             }
         })
         .catch(err => console.error("Error cargando el catálogo:", err));
 });
 
-// 2. Filtro dinámico para cuando el usuario escribe (ej: "bolaño")
+// 2. Filtro dinámico para cuando escribes (ej: "fuentes" o "bolaño")
 function inicializarBuscadorMaule(listaCompleta) {
     const inputBuscador = document.getElementById('buscador');
     if (!inputBuscador) return;
@@ -47,7 +44,6 @@ function inicializarBuscadorMaule(listaCompleta) {
         }
 
         const filtrados = listaCompleta.filter(libro => {
-            // Usamos las etiquetas exactas de tu JSON: titulo y autor
             const tituloOk = libro.titulo ? libro.titulo.toLowerCase().includes(palabra) : false;
             const autorOk = libro.autor ? libro.autor.toLowerCase().includes(palabra) : false;
             return tituloOk || autorOk;
@@ -73,10 +69,10 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'book-card';
         
-        // Vinculamos el ID de la tarjeta al número único del libro
+        // Vinculamos el ID de la tarjeta al número único del libro (id)
         tarjeta.id = `libro-${libro.id}`;
         
-        // Estilo adaptado para mantener la elegancia de tu grilla
+        // Estilo adaptado para mantener la elegancia de tu grilla crema
         tarjeta.style.cssText = "border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; background: #fff; display: inline-block; width: 260px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-family: sans-serif;";
 
         tarjeta.innerHTML = `
@@ -92,7 +88,7 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
         
         grilla.appendChild(tarjeta);
 
-        // Si tu ID de libro en el JSON coincide con el ID de sistema en Aleph, consultamos
+        // Si tu libro tiene ID, consultamos inmediatamente al proxy de tu máquina
         if (libro.id) {
             preguntarDisponibilidadAleph(libro.id);
         }
@@ -101,23 +97,25 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
 
 // 4. Consulta silenciosa a tu servidor proxy local (Puerto 3000)
 function preguntarDisponibilidadAleph(idSistema) {
-    // Rellenamos con ceros a la izquierda para cumplir los 9 dígitos que exige tu proxy
+    // Rellenamos con ceros a la izquierda para cumplir los 9 dígitos que exige Aleph
     const idFormateado = String(idSistema).padStart(9, '0');
 
     fetch(`${PUENTE_ALEPH_URL}/${idFormateado}`)
         .then(res => res.json())
         .then(json => {
+            // Buscamos la tarjeta usando la propiedad idSistema unificada
             const tarjeta = document.getElementById(`libro-${idSistema}`);
             if (!tarjeta) return;
 
             const contenedorBadge = tarjeta.querySelector('.availability-container');
             if (!contenedorBadge) return;
 
+            // El proxy local calcula las clases de color de forma automática para BP. Talca
             if (json.success && json.data.disponible) {
-                contenedorBadge.innerHTML = `<span style="color: #137333; font-weight: bold; background: #e6f4ea; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem;">🟢 Disponible</span>`;
+                contenedorBadge.innerHTML = `<span class="status-badge status-available" style="color: #137333; font-weight: bold; background: #e6f4ea; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-block;">🟢 Disponible en estantería</span>`;
             } else {
                 const fDevolucion = json.data?.fecha_devolucion;
-                contenedorBadge.innerHTML = `<span style="color: #c5221f; font-weight: bold; background: #fce8e6; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem;">🔴 Prestado ${fDevolucion ? `(Vuelve: ${fDevolucion})` : ''}</span>`;
+                contenedorBadge.innerHTML = `<span class="status-badge status-borrowed" style="color: #c5221f; font-weight: bold; background: #fce8e6; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-block;">🔴 Prestado ${fDevolucion ? `(Devuelve: ${fDevolucion})` : ''}</span>`;
             }
         })
         .catch(() => {
@@ -125,22 +123,7 @@ function preguntarDisponibilidadAleph(idSistema) {
             if (!tarjeta) return;
             const contenedorBadge = tarjeta.querySelector('.availability-container');
             if (contenedorBadge) {
-                contenedorBadge.innerHTML = `<span style="color: #555; background: #f5f5f5; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem;">ℹ️ Disponible en sala</span>`;
+                contenedorBadge.innerHTML = `<span class="status-badge status-normal" style="color: #555; background: #f5f5f5; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-block;">ℹ️ Disponible en sala</span>`;
             }
         });
-}
-// 5. ACTUALIZACIÓN VISUAL: Inyecta el estado de color precalculado por el proxy local
-function actualizarEtiquetaVisual(idSistema, datosLibro) {
-    const tarjeta = document.getElementById(`libro-${idSistema}`);
-    if (!tarjeta) return;
-
-    const contenedorDisponibilidad = tarjeta.querySelector('.availability-container');
-    if (!contenedorDisponibilidad) return;
-
-    // El proxy ahora calcula de fondo la clase de color y el texto exacto según la sede
-    contenedorDisponibilidad.innerHTML = `
-        <span class="status-badge ${datosLibro.clase_css || 'status-normal'}">
-            ${datosLibro.texto || 'ℹ️ Disponible en Sala'}
-        </span>
-    `;
 }
