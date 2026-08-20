@@ -1,34 +1,40 @@
 /**
  * ==========================================================================
- * SISTEMA DEFINITIVO: MOTOR NATIVO MAULE + CONECTOR ALEPH v.24
+ * SISTEMA DEFINITIVO: LECTURA DE ESTRUCTURA JSON RECOMENDADOS + PROXY ALEPH
  * Biblioteca Pública del Maule - Clase 800
  * ==========================================================================
  */
 
 const PUENTE_ALEPH_URL = 'http://localhost:3000/api/libros';
-let librosCatalogo = [];
+let catalogoCompleto = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cargamos los libros desde tu archivo local
+    // 1. Cargamos tu archivo libros.json
     fetch('libros.json')
         .then(response => {
             if (!response.ok) throw new Error('No se pudo cargar libros.json');
             return response.json();
         })
         .then(data => {
-            librosCatalogo = data;
-            
-            // Mostramos los primeros 40 libros por defecto al abrir la web
-            mostrarLibrosEnPantalla(librosCatalogo.slice(0, 40));
+            // Mapeo exacto: Extraemos el arreglo de la propiedad "libros" del JSON
+            if (data && Array.isArray(data.libros)) {
+                catalogoCompleto = data.libros;
+                console.log("Libros cargados con éxito:", catalogoCompleto.length);
+                
+                // Desplegamos los primeros 40 libros en pantalla al entrar
+                mostrarLibrosEnPantalla(catalogoCompleto.slice(0, 40));
 
-            // Activamos tu buscador nativo
-            inicializarBuscadorMaule();
+                // Activamos tu barra de búsqueda sobre este catálogo
+                inicializarBuscadorMaule(catalogoCompleto);
+            } else {
+                console.error("La estructura del JSON no contiene la propiedad 'libros' como arreglo.");
+            }
         })
-        .catch(err => console.error("Error al inicializar los datos:", err));
+        .catch(err => console.error("Error cargando el catálogo:", err));
 });
 
-// 2. Filtro dinámico para cuando escribes (ej: "bolaño")
-function inicializarBuscadorMaule() {
+// 2. Filtro dinámico para cuando el usuario escribe (ej: "bolaño")
+function inicializarBuscadorMaule(listaCompleta) {
     const inputBuscador = document.getElementById('buscador');
     if (!inputBuscador) return;
 
@@ -36,11 +42,12 @@ function inicializarBuscadorMaule() {
         const palabra = e.target.value.toLowerCase().trim();
 
         if (palabra === "") {
-            mostrarLibrosEnPantalla(librosCatalogo.slice(0, 40));
+            mostrarLibrosEnPantalla(listaCompleta.slice(0, 40));
             return;
         }
 
-        const filtrados = librosCatalogo.filter(libro => {
+        const filtrados = listaCompleta.filter(libro => {
+            // Usamos las etiquetas exactas de tu JSON: titulo y autor
             const tituloOk = libro.titulo ? libro.titulo.toLowerCase().includes(palabra) : false;
             const autorOk = libro.autor ? libro.autor.toLowerCase().includes(palabra) : false;
             return tituloOk || autorOk;
@@ -50,12 +57,12 @@ function inicializarBuscadorMaule() {
     });
 }
 
-// 3. Función que dibuja las tarjetas exactamente en tu contenedor "grilla"
+// 3. Dibuja las tarjetas visuales exactamente en tu contenedor "grilla"
 function mostrarLibrosEnPantalla(listaDeLibros) {
     const grilla = document.getElementById('grilla');
     if (!grilla) return;
 
-    grilla.innerHTML = ''; // Limpiamos resultados anteriores
+    grilla.innerHTML = ''; // Limpiamos resultados previos
 
     if (listaDeLibros.length === 0) {
         grilla.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #666; padding: 30px;">No se encontraron libros para esta consulta.</p>`;
@@ -65,17 +72,19 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
     listaDeLibros.forEach(libro => {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'book-card';
-        tarjeta.id = `libro-${libro.id_sistema}`;
         
-        // Estilo limpio para que combine con el fondo de tu web
+        // Vinculamos el ID de la tarjeta al número único del libro
+        tarjeta.id = `libro-${libro.id}`;
+        
+        // Estilo adaptado para mantener la elegancia de tu grilla
         tarjeta.style.cssText = "border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; background: #fff; display: inline-block; width: 260px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-family: sans-serif;";
 
         tarjeta.innerHTML = `
-            <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #222;">${libro.titulo}</h3>
-            <p style="margin: 0 0 5px 0; color: #555; font-size: 0.95rem;">Por: ${libro.autor}</p>
+            <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #222;">${libro.titulo || 'Sin título'}</h3>
+            <p style="margin: 0 0 5px 0; color: #555; font-size: 0.95rem;">Por: ${libro.autor || 'Autor desconocido'}</p>
             <p style="margin: 0; font-size: 0.85rem; color: #888;">Clasificación: ${libro.clasificacion || '800'}</p>
             
-            <!-- Óvalo invisible que consultará en segundo plano -->
+            <!-- Óvalo dinámico de disponibilidad -->
             <div class="availability-container" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #eee;">
                 <span class="status-badge" style="color: #777; font-size: 0.85rem;">🔄 Verificando...</span>
             </div>
@@ -83,16 +92,19 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
         
         grilla.appendChild(tarjeta);
 
-        // Preguntamos de inmediato a tu PM2 local por la disponibilidad de este libro
-        if (libro.id_sistema) {
-            preguntarDisponibilidadAleph(libro.id_sistema);
+        // Si tu ID de libro en el JSON coincide con el ID de sistema en Aleph, consultamos
+        if (libro.id) {
+            preguntarDisponibilidadAleph(libro.id);
         }
     });
 }
 
-// 4. Consulta silenciosa a tu servidor local (Puerto 3000)
+// 4. Consulta silenciosa a tu servidor proxy local (Puerto 3000)
 function preguntarDisponibilidadAleph(idSistema) {
-    fetch(`${PUENTE_ALEPH_URL}/${idSistema}`)
+    // Rellenamos con ceros a la izquierda para cumplir los 9 dígitos que exige tu proxy
+    const idFormateado = String(idSistema).padStart(9, '0');
+
+    fetch(`${PUENTE_ALEPH_URL}/${idFormateado}`)
         .then(res => res.json())
         .then(json => {
             const tarjeta = document.getElementById(`libro-${idSistema}`);
@@ -109,7 +121,6 @@ function preguntarDisponibilidadAleph(idSistema) {
             }
         })
         .catch(() => {
-            // Estado por defecto si el servidor local está apagado
             const tarjeta = document.getElementById(`libro-${idSistema}`);
             if (!tarjeta) return;
             const contenedorBadge = tarjeta.querySelector('.availability-container');
