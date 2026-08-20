@@ -91,7 +91,7 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
 }
 
 // 4. Consulta silenciosa a tu servidor local (Puerto 3000)
-function preguntaráDisponibilidadAleph(idSistema) {
+function preguntarDisponibilidadAleph(idSistema) {
     fetch(`${PUENTE_ALEPH_URL}/${idSistema}`)
         .then(res => res.json())
         .then(json => {
