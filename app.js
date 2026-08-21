@@ -73,8 +73,7 @@ function mostrarLibrosEnPantalla(listaDeLibros) {
         const idFormateado = String(libro.id).padStart(9, '0');
         
         // URL unificada que abre la ficha técnica del libro en el OPAC de forma nativa
-        const urlOpacDirecta = `http://bncatalogo.cl{idFormateado}`;
-
+                const urlOpacDirecta = "http://bncatalogo.cl" + idFormateado;
         // Estilo adaptado para mantener la elegancia de tu grilla crema
         tarjeta.style.cssText = "border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; background: #fff; display: inline-block; width: 260px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-family: sans-serif;";
 
