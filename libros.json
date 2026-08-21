@@ -1348,14 +1348,11 @@
    "numEjemplares": 1
   },
   {
-   "id": 135,
-   "titulo": "Adán en Edén / Carlos Fuentes.",
-   "autor": "Carlos Fuentes",
-   "coleccion": "Literatura general",
-   "clasificacion": "M863/FUE/ad",
-   "iniciales": "AE",
-   "color": "#5C7052",
-   "numEjemplares": 1
+     "id": "158886",
+  "titulo": "Adán en Edén",
+  "autor": "Carlos Fuentes",
+  "clasificacion": "800"
+
   },
   {
    "id": 136,
